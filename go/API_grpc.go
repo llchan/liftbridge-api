@@ -4,6 +4,8 @@
 
 package proto
 
+import "github.com/google/flatbuffers/go"
+
 import (
   context "context"
   grpc "google.golang.org/grpc"
@@ -11,14 +13,14 @@ import (
 
 // Client API for API service
 type APIClient interface{
-  CreateStream(ctx context.Context, in *CreateStreamRequest, 
-  	opts... grpc.CallOption) (* CreateStreamResponse, error)  
-  Subscribe(ctx context.Context, in *SubscribeRequest, 
+  CreateStream(ctx context.Context, in *flatbuffers.Builder, 
+  	opts... grpc.CallOption) (* CreateStreamResponseReceiver, error)  
+  Subscribe(ctx context.Context, in *flatbuffers.Builder, 
   	opts... grpc.CallOption) (API_SubscribeClient, error)  
-  FetchMetadata(ctx context.Context, in *FetchMetadataRequest, 
-  	opts... grpc.CallOption) (* FetchMetadataResponse, error)  
-  Publish(ctx context.Context, in *PublishRequest, 
-  	opts... grpc.CallOption) (* PublishResponse, error)  
+  FetchMetadata(ctx context.Context, in *flatbuffers.Builder, 
+  	opts... grpc.CallOption) (* FetchMetadataResponseReceiver, error)  
+  Publish(ctx context.Context, in *flatbuffers.Builder, 
+  	opts... grpc.CallOption) (* PublishResponseReceiver, error)  
 }
 
 type aPIClient struct {
@@ -29,15 +31,15 @@ func NewAPIClient(cc *grpc.ClientConn) APIClient {
   return &aPIClient{cc}
 }
 
-func (c *aPIClient) CreateStream(ctx context.Context, in *CreateStreamRequest, 
-	opts... grpc.CallOption) (* CreateStreamResponse, error) {
-  out := new(CreateStreamResponse)
+func (c *aPIClient) CreateStream(ctx context.Context, in *flatbuffers.Builder, 
+	opts... grpc.CallOption) (* CreateStreamResponseReceiver, error) {
+  out := new(CreateStreamResponseReceiver)
   err := grpc.Invoke(ctx, "/proto.API/CreateStream", in, out, c.cc, opts...)
   if err != nil { return nil, err }
   return out, nil
 }
 
-func (c *aPIClient) Subscribe(ctx context.Context, in *SubscribeRequest, 
+func (c *aPIClient) Subscribe(ctx context.Context, in *flatbuffers.Builder, 
 	opts... grpc.CallOption) (API_SubscribeClient, error) {
   stream, err := grpc.NewClientStream(ctx, &_API_serviceDesc.Streams[0], c.cc, "/proto.API/Subscribe", opts...)
   if err != nil { return nil, err }
@@ -48,7 +50,7 @@ func (c *aPIClient) Subscribe(ctx context.Context, in *SubscribeRequest,
 }
 
 type API_SubscribeClient interface {
-  Recv() (*Message, error)
+  Recv() (*MessageReceiver, error)
   grpc.ClientStream
 }
 
@@ -56,23 +58,23 @@ type aPISubscribeClient struct{
   grpc.ClientStream
 }
 
-func (x *aPISubscribeClient) Recv() (*Message, error) {
-  m := new(Message)
+func (x *aPISubscribeClient) Recv() (*MessageReceiver, error) {
+  m := new(MessageReceiver)
   if err := x.ClientStream.RecvMsg(m); err != nil { return nil, err }
   return m, nil
 }
 
-func (c *aPIClient) FetchMetadata(ctx context.Context, in *FetchMetadataRequest, 
-	opts... grpc.CallOption) (* FetchMetadataResponse, error) {
-  out := new(FetchMetadataResponse)
+func (c *aPIClient) FetchMetadata(ctx context.Context, in *flatbuffers.Builder, 
+	opts... grpc.CallOption) (* FetchMetadataResponseReceiver, error) {
+  out := new(FetchMetadataResponseReceiver)
   err := grpc.Invoke(ctx, "/proto.API/FetchMetadata", in, out, c.cc, opts...)
   if err != nil { return nil, err }
   return out, nil
 }
 
-func (c *aPIClient) Publish(ctx context.Context, in *PublishRequest, 
-	opts... grpc.CallOption) (* PublishResponse, error) {
-  out := new(PublishResponse)
+func (c *aPIClient) Publish(ctx context.Context, in *flatbuffers.Builder, 
+	opts... grpc.CallOption) (* PublishResponseReceiver, error) {
+  out := new(PublishResponseReceiver)
   err := grpc.Invoke(ctx, "/proto.API/Publish", in, out, c.cc, opts...)
   if err != nil { return nil, err }
   return out, nil
@@ -80,10 +82,10 @@ func (c *aPIClient) Publish(ctx context.Context, in *PublishRequest,
 
 // Server API for API service
 type APIServer interface {
-  CreateStream(context.Context, *CreateStreamRequest) (*CreateStreamResponse, error)  
-  Subscribe(*SubscribeRequest, API_SubscribeServer) error  
-  FetchMetadata(context.Context, *FetchMetadataRequest) (*FetchMetadataResponse, error)  
-  Publish(context.Context, *PublishRequest) (*PublishResponse, error)  
+  CreateStream(context.Context, *CreateStreamRequestReceiver) (*flatbuffers.Builder, error)  
+  Subscribe(*SubscribeRequestReceiver, API_SubscribeServer) error  
+  FetchMetadata(context.Context, *FetchMetadataRequestReceiver) (*flatbuffers.Builder, error)  
+  Publish(context.Context, *PublishRequestReceiver) (*flatbuffers.Builder, error)  
 }
 
 func RegisterAPIServer(s *grpc.Server, srv APIServer) {
@@ -92,7 +94,7 @@ func RegisterAPIServer(s *grpc.Server, srv APIServer) {
 
 func _API_CreateStream_Handler(srv interface{}, ctx context.Context,
 	dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-  in := new(CreateStreamRequest)
+  in := new(CreateStreamRequestReceiver)
   if err := dec(in); err != nil { return nil, err }
   if interceptor == nil { return srv.(APIServer).CreateStream(ctx, in) }
   info := &grpc.UnaryServerInfo{
@@ -101,20 +103,20 @@ func _API_CreateStream_Handler(srv interface{}, ctx context.Context,
   }
   
   handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-    return srv.(APIServer).CreateStream(ctx, req.(* CreateStreamRequest))
+    return srv.(APIServer).CreateStream(ctx, req.(* CreateStreamRequestReceiver))
   }
   return interceptor(ctx, in, info, handler)
 }
 
 
 func _API_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
-  m := new(SubscribeRequest)
+  m := new(SubscribeRequestReceiver)
   if err := stream.RecvMsg(m); err != nil { return err }
   return srv.(APIServer).Subscribe(m, &aPISubscribeServer{stream})
 }
 
 type API_SubscribeServer interface { 
-  Send(* Message) error
+  Send(* flatbuffers.Builder) error
   grpc.ServerStream
 }
 
@@ -122,14 +124,14 @@ type aPISubscribeServer struct {
   grpc.ServerStream
 }
 
-func (x *aPISubscribeServer) Send(m *Message) error {
+func (x *aPISubscribeServer) Send(m *flatbuffers.Builder) error {
   return x.ServerStream.SendMsg(m)
 }
 
 
 func _API_FetchMetadata_Handler(srv interface{}, ctx context.Context,
 	dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-  in := new(FetchMetadataRequest)
+  in := new(FetchMetadataRequestReceiver)
   if err := dec(in); err != nil { return nil, err }
   if interceptor == nil { return srv.(APIServer).FetchMetadata(ctx, in) }
   info := &grpc.UnaryServerInfo{
@@ -138,7 +140,7 @@ func _API_FetchMetadata_Handler(srv interface{}, ctx context.Context,
   }
   
   handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-    return srv.(APIServer).FetchMetadata(ctx, req.(* FetchMetadataRequest))
+    return srv.(APIServer).FetchMetadata(ctx, req.(* FetchMetadataRequestReceiver))
   }
   return interceptor(ctx, in, info, handler)
 }
@@ -146,7 +148,7 @@ func _API_FetchMetadata_Handler(srv interface{}, ctx context.Context,
 
 func _API_Publish_Handler(srv interface{}, ctx context.Context,
 	dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-  in := new(PublishRequest)
+  in := new(PublishRequestReceiver)
   if err := dec(in); err != nil { return nil, err }
   if interceptor == nil { return srv.(APIServer).Publish(ctx, in) }
   info := &grpc.UnaryServerInfo{
@@ -155,7 +157,7 @@ func _API_Publish_Handler(srv interface{}, ctx context.Context,
   }
   
   handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-    return srv.(APIServer).Publish(ctx, req.(* PublishRequest))
+    return srv.(APIServer).Publish(ctx, req.(* PublishRequestReceiver))
   }
   return interceptor(ctx, in, info, handler)
 }
