@@ -571,15 +571,17 @@ func (rcv *FetchMetadataResponseReceiver) UnPackTo(t *FetchMetadataResponse) {
 	t.Brokers = make([]*Broker, brokersLength)
 	for j := 0; j < brokersLength; j++ {
 		x := BrokerReceiver{}
-		rcv.Brokers(&x, j)
-		t.Brokers[j] = x.UnPack()
+		if rcv.Brokers(&x, j) {
+			t.Brokers[j] = x.UnPack()
+		}
 	}
 	metadataLength := rcv.MetadataLength()
 	t.Metadata = make([]*StreamMetadata, metadataLength)
 	for j := 0; j < metadataLength; j++ {
 		x := StreamMetadataReceiver{}
-		rcv.Metadata(&x, j)
-		t.Metadata[j] = x.UnPack()
+		if rcv.Metadata(&x, j) {
+			t.Metadata[j] = x.UnPack()
+		}
 	}
 }
 
@@ -975,8 +977,9 @@ func (rcv *StreamMetadataReceiver) UnPackTo(t *StreamMetadata) {
 	t.Partitions = make([]*PartitionMetadata, partitionsLength)
 	for j := 0; j < partitionsLength; j++ {
 		x := PartitionMetadataReceiver{}
-		rcv.Partitions(&x, j)
-		t.Partitions[j] = x.UnPack()
+		if rcv.Partitions(&x, j) {
+			t.Partitions[j] = x.UnPack()
+		}
 	}
 }
 
@@ -1445,8 +1448,9 @@ func (rcv *MessageReceiver) UnPackTo(t *Message) {
 	t.Headers = make([]*MessageHeader, headersLength)
 	for j := 0; j < headersLength; j++ {
 		x := MessageHeaderReceiver{}
-		rcv.Headers(&x, j)
-		t.Headers[j] = x.UnPack()
+		if rcv.Headers(&x, j) {
+			t.Headers[j] = x.UnPack()
+		}
 	}
 	t.AckInbox = string(rcv.AckInbox())
 	t.CorrelationId = string(rcv.CorrelationId())
